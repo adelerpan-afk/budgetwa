@@ -4,35 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Budget Manager</title>
-
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  // =============================================
-  // 🔧 GANTI DENGAN FIREBASE CONFIG KAMU DI SINI
-  // =============================================
-  const firebaseConfig = {
-    apiKey: "AIzaSyCvOVM1NfLr7KRWeqmZl8gZVLA8F9UYvXc",
-    authDomain: "budgetwa-41335.firebaseapp.com",
-    projectId: "budgetwa-41335",
-    storageBucket: "budgetwa-41335.firebasestorage.app",
-    messagingSenderId: "785678795355",
-    appId: "1:785678795355:web:41689b58cff929a2b9f57e",
-    measurementId: "G-K7V25HL4B6"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const _firebaseDb = getFirestore(app);
-
-  // Expose ke global scope
-  window._db = db;
-  window._fbModules = { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, setDoc, getDoc };
-  window._fbReady = true;
-  window.dispatchEvent(new Event('firebase-ready'));
-</script>
-
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -77,11 +48,42 @@ body {
   flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
-  position: relative;
   overflow: hidden;
 }
 
-/* HEADER */
+/* ── TOAST ── */
+#toastContainer {
+  position: fixed;
+  top: 60px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  width: 90%;
+  max-width: 420px;
+}
+.toast {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s, transform 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { background: #1B873F; }
+.toast.error   { background: #C62828; }
+.toast.info    { background: #1565C0; }
+
+/* ── HEADER ── */
 .header {
   background: var(--wa-header);
   color: white;
@@ -98,11 +100,11 @@ body {
   border-radius: 50%;
   background: var(--wa-green);
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px; color: white; flex-shrink: 0;
+  font-size: 18px; flex-shrink: 0;
 }
 .header-info { flex: 1; }
-.header-info .name { font-weight: 600; font-size: 16px; }
-.header-info .sub { font-size: 12px; color: #B2DFDB; }
+.header-info .name { font-weight: 600; font-size: 16px; display:flex; align-items:center; gap:6px; }
+.header-info .sub  { font-size: 12px; color: #B2DFDB; }
 .header-icons { display: flex; gap: 4px; align-items: center; position: relative; }
 .icon-btn {
   background: none; border: none; color: white;
@@ -112,16 +114,26 @@ body {
 }
 .icon-btn:hover { background: rgba(255,255,255,0.15); }
 
+/* sync dot */
+.sync-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+  background: #aaa; transition: background 0.3s;
+}
+.sync-dot.ok      { background: #25D366; }
+.sync-dot.err     { background: #EF5350; }
+.sync-dot.loading { background: #FFD700; animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
 /* EDIT MODE BANNER */
 .edit-banner {
   display: none;
-  background: #FF6F00;
+  background: #E65100;
   color: white;
   text-align: center;
   padding: 5px;
   font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.5px;
   flex-shrink: 0;
 }
 .edit-banner.active { display: block; }
@@ -133,7 +145,7 @@ body {
   background: var(--wa-white);
   border-radius: 6px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-  min-width: 170px;
+  min-width: 175px;
   z-index: 999;
   overflow: hidden;
   display: none;
@@ -175,6 +187,7 @@ body {
   color: #1B5E20;
   cursor: pointer; outline: none;
   font-family: var(--font);
+  max-width: 180px;
 }
 [data-theme="dark"] .info-select { color: #A5D6A7; }
 .info-badge-yellow {
@@ -183,6 +196,7 @@ body {
   padding: 2px 10px;
   font-size: 12px; font-weight: 600;
   color: #5D4037;
+  white-space: nowrap;
 }
 
 /* CHAT AREA */
@@ -199,7 +213,7 @@ body {
 .chat-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
 
 /* DATE DIVIDER */
-.date-divider { text-align: center; margin: 6px 0; }
+.date-divider { text-align: center; margin: 4px 0; }
 .date-divider span {
   background: rgba(255,255,255,0.85);
   border-radius: 8px; padding: 3px 12px;
@@ -208,36 +222,39 @@ body {
 }
 [data-theme="dark"] .date-divider span { background: rgba(31,44,52,0.9); }
 
-/* BUBBLE WRAPPER — controls left/right alignment */
+/* BUBBLE WRAPPER */
 .bubble-wrap {
   display: flex;
   align-items: flex-end;
   gap: 6px;
+  width: 100%;          /* take full row width */
 }
-.bubble-wrap.left  { align-self: flex-start; flex-direction: row; }
-.bubble-wrap.right { align-self: flex-end;   flex-direction: row-reverse; }
+.bubble-wrap.left  { flex-direction: row; }
+.bubble-wrap.right { flex-direction: row-reverse; }
 
-/* EDIT PENCIL BUTTON */
+/* EDIT PENCIL */
 .edit-pencil {
   display: none;
   background: none; border: none;
-  font-size: 16px; cursor: pointer;
+  font-size: 15px; cursor: pointer;
   padding: 4px; border-radius: 50%;
   transition: background 0.2s;
   flex-shrink: 0;
+  align-self: center;
 }
-.edit-pencil:hover { background: rgba(0,0,0,0.08); }
+.edit-pencil:hover { background: rgba(0,0,0,0.1); }
 .edit-mode-on .edit-pencil { display: flex; }
 
-/* BUBBLE */
+/* BUBBLE — stretched across available width */
 .bubble {
-  max-width: 82%;
+  flex: 1;              /* fill remaining space beside pencil */
+  min-width: 0;
   border-radius: 8px;
   padding: 8px 12px 6px;
   font-size: 13.5px;
   position: relative;
   box-shadow: 0 1px 2px rgba(0,0,0,0.12);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 .bubble.out {
   background: var(--wa-bubble-out);
@@ -247,18 +264,17 @@ body {
   background: var(--wa-bubble-in);
   border-top-left-radius: 2px;
 }
-.bubble .btime {
-  font-size: 10.5px;
-  color: var(--wa-subtext);
-  float: right;
-  margin-left: 10px;
-  margin-top: 2px;
-}
 .bubble .btag { font-size: 11px; font-weight: 700; margin-bottom: 3px; }
-.badge-in  { background: #E8F5E9; color: #2E7D32; padding: 1px 7px; border-radius: 10px; font-size: 11.5px; font-weight: 600; }
-.badge-out { background: #FFEBEE; color: #C62828; padding: 1px 7px; border-radius: 10px; font-size: 11.5px; font-weight: 600; }
-.bubble .bamt {
-  font-size: 14px; font-weight: 700; margin-top: 3px;
+.badge-in  { background: #E8F5E9; color: #2E7D32; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.badge-out { background: #FFEBEE; color: #C62828; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.bubble .bamt { font-size: 15px; font-weight: 700; margin-top: 4px; }
+.bubble .btime {
+  font-size: 10.5px; color: var(--wa-subtext);
+  float: right; margin-left: 10px; margin-top: 2px;
+}
+.bubble .bket {
+  font-size: 12px; color: var(--wa-subtext);
+  margin-top: 1px;
 }
 
 /* INPUT AREA */
@@ -276,18 +292,16 @@ body {
   cursor: pointer; color: var(--wa-subtext); transition: all 0.2s;
 }
 .type-btn.active-in  { border-color: var(--wa-green); background: #E8F5E9; color: #2E7D32; }
-.type-btn.active-out { border-color: #EF5350;         background: #FFEBEE; color: #C62828; }
+.type-btn.active-out { border-color: #EF5350; background: #FFEBEE; color: #C62828; }
 
 .form-row {
   display: grid;
   grid-template-columns: 92px 6px 1fr;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
+  gap: 3px;
   margin-bottom: 4px;
 }
 .form-row label { font-size: 12.5px; color: var(--wa-subtext); font-weight: 500; }
-
 input[type="text"], input[type="number"], select {
   font-family: var(--font);
   font-size: 13px;
@@ -299,26 +313,33 @@ input[type="text"], input[type="number"], select {
   transition: border 0.2s;
   width: 100%;
 }
-input[type="text"]:focus, input[type="number"]:focus, select:focus { border-color: var(--wa-green); }
+input:focus, select:focus { border-color: var(--wa-green); }
 .entry-field    { background: var(--entry-bg); }
 .dropdown-field { background: var(--dropdown-bg); color: #1B5E20; font-weight: 600; }
 [data-theme="dark"] .dropdown-field { color: #A5D6A7; }
-
-.bottom-row { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
+.bottom-row { display: flex; gap: 8px; margin-top: 5px; align-items: center; }
 .nominal-wrap { flex: 1; position: relative; }
-.nominal-wrap span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--wa-subtext); }
+.nominal-wrap span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--wa-subtext); pointer-events:none; }
 .nominal-wrap input { padding-left: 30px; background: var(--entry-bg); }
 .send-btn {
   width: 44px; height: 44px; border-radius: 50%;
   background: var(--wa-green); border: none;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  color: white; font-size: 22px;
+  color: white; font-size: 20px;
   box-shadow: 0 2px 6px rgba(37,211,102,0.4);
   transition: background 0.2s; flex-shrink: 0;
 }
 .send-btn:hover { background: var(--wa-dark-green); }
+.send-btn:disabled { background: #aaa; cursor: not-allowed; box-shadow: none; }
 
-/* FLOATING EDIT FORM */
+/* FLOATING EDIT */
+.floating-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 299;
+}
+.floating-overlay.open { display: block; }
 .floating-edit {
   display: none;
   position: fixed;
@@ -328,46 +349,34 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus { border-colo
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
   z-index: 300;
-  padding: 16px;
+  padding: 16px 16px 20px;
 }
 .floating-edit.open { display: block; }
 .floating-edit h4 {
   font-size: 14px; font-weight: 700; color: var(--wa-teal);
-  margin-bottom: 12px; display: flex; justify-content: space-between;
+  margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
 }
-.floating-edit h4 button {
-  background: none; border: none; font-size: 20px; cursor: pointer; color: var(--wa-subtext);
-}
-.floating-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.4);
-  z-index: 299;
-}
-.floating-overlay.open { display: block; }
+.floating-edit h4 button { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--wa-subtext); }
+.fe-actions { display: flex; gap: 8px; margin-top: 12px; }
 
-/* MODAL */
+/* MODALS */
 .modal-overlay {
   display: none;
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.5);
   z-index: 200;
-  align-items: center;
-  justify-content: center;
+  align-items: center; justify-content: center;
 }
 .modal-overlay.open { display: flex; }
 .modal {
   background: var(--wa-white);
   border-radius: 12px;
-  width: 92%;
-  max-width: 400px;
-  max-height: 85vh;
-  overflow-y: auto;
+  width: 92%; max-width: 400px;
+  max-height: 85vh; overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 .modal-header {
-  background: var(--wa-teal);
-  color: white;
+  background: var(--wa-teal); color: white;
   padding: 14px 18px;
   border-radius: 12px 12px 0 0;
   display: flex; justify-content: space-between; align-items: center;
@@ -376,60 +385,49 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus { border-colo
 .modal-header h3 { font-size: 16px; }
 .modal-close { background: none; border: none; color: white; font-size: 22px; cursor: pointer; }
 .modal-body { padding: 16px; }
-.modal-body label { font-size: 12.5px; color: var(--wa-subtext); display: block; margin-bottom: 3px; margin-top: 10px; }
-.modal-body label:first-child { margin-top: 0; }
+.modal-body label { font-size: 12.5px; color: var(--wa-subtext); display: block; margin: 10px 0 3px; }
+.modal-body label:first-of-type { margin-top: 0; }
 .modal-body input, .modal-body select { background: var(--wa-input-bg); border: 1px solid var(--wa-divider); }
 .modal-footer { padding: 12px 16px; display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--wa-divider); }
 
 .btn { padding: 8px 20px; border: none; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
 .btn:hover { opacity: 0.85; }
 .btn-primary { background: var(--wa-green); color: white; }
-.btn-danger   { background: #EF5350; color: white; }
-.btn-ghost    { background: var(--wa-divider); color: var(--wa-text); }
+.btn-danger  { background: #EF5350; color: white; }
+.btn-ghost   { background: var(--wa-divider); color: var(--wa-text); }
 
-/* BUDGET LIST */
 .budget-item { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--wa-divider); font-size: 13px; }
 .budget-item:last-child { border-bottom: none; }
 .budget-item-name { flex: 1; }
-.budget-item-amount { color: var(--wa-dark-green); font-weight: 600; font-size: 12.5px; }
+.budget-item-amount { color: var(--wa-dark-green); font-weight: 600; font-size: 12.5px; white-space: nowrap; }
 .action-btn { padding: 3px 10px; border-radius: 12px; font-size: 11.5px; font-weight: 600; cursor: pointer; border: none; }
 .action-edit { background: #E3F2FD; color: #1565C0; }
 .action-del  { background: #FFEBEE; color: #C62828; }
 
 /* THEME TOGGLE */
 .theme-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 4px; }
-.theme-row label { font-size: 14px; font-weight: 500; }
 .toggle { position: relative; width: 46px; height: 26px; }
 .toggle input { opacity: 0; width: 0; height: 0; }
 .toggle-slider { position: absolute; inset: 0; background: var(--wa-divider); border-radius: 26px; cursor: pointer; transition: background 0.3s; }
 .toggle-slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform 0.3s; }
 input:checked + .toggle-slider { background: var(--wa-green); }
 input:checked + .toggle-slider::before { transform: translateX(20px); }
-
-/* SYNC STATUS */
-.sync-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #aaa; display: inline-block;
-  margin-left: 4px; vertical-align: middle;
-  transition: background 0.3s;
-}
-.sync-dot.ok { background: #25D366; }
-.sync-dot.err { background: #EF5350; }
-.sync-dot.loading { background: #FFD700; animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 </style>
 </head>
 <body data-theme="light">
+
+<!-- TOAST -->
+<div id="toastContainer"></div>
 
 <!-- HEADER -->
 <div class="header">
   <div class="header-avatar">💰</div>
   <div class="header-info">
-    <div class="name">Budget Manager <span class="sync-dot" id="syncDot" title="Firebase status"></span></div>
-    <div class="sub" id="headerSub">Memuat...</div>
+    <div class="name">Budget Manager <span class="sync-dot loading" id="syncDot"></span></div>
+    <div class="sub" id="headerSub">Menghubungkan ke Firebase...</div>
   </div>
   <div class="header-icons">
-    <button class="icon-btn" onclick="toggleMenu()" title="Menu">⋮</button>
+    <button class="icon-btn" onclick="toggleMenu()">⋮</button>
     <div class="dropdown-menu" id="dropdownMenu">
       <a onclick="toggleEditMode()" id="editModeMenu">✏️ Edit Mode</a>
       <div class="menu-divider"></div>
@@ -439,38 +437,34 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
   </div>
 </div>
 
-<!-- EDIT MODE BANNER -->
-<div class="edit-banner" id="editBanner">✏️ EDIT MODE AKTIF — Ketuk ikon pensil pada chat untuk mengedit</div>
+<!-- EDIT BANNER -->
+<div class="edit-banner" id="editBanner">✏️ EDIT MODE AKTIF — Ketuk ✏️ pada chat untuk mengedit transaksi</div>
 
 <!-- INFO BAR -->
 <div class="info-bar">
   <span class="lbl">Bulan</span><span>:</span>
   <span class="val" id="infoBulan">—</span>
-
   <span class="lbl">Sisa Uang</span><span>:</span>
   <span class="val" id="infoSisa">Rp 0</span>
-
   <div class="budget-row">
-    <span class="lbl" style="width:82px;flex-shrink:0">Sisa Budget</span>
+    <span class="lbl" style="flex-shrink:0;width:82px">Sisa Budget</span>
     <span>:</span>
     <select class="info-select" id="budgetSelector" onchange="updateBudgetNominal()"></select>
     <span class="info-badge-yellow" id="infoBudgetNominal">Rp 0</span>
   </div>
 </div>
 
-<!-- CHAT AREA -->
+<!-- CHAT -->
 <div class="chat-area" id="chatArea">
-  <div class="date-divider"><span id="todayLabel">Hari ini</span></div>
+  <div class="date-divider"><span id="todayLabel">—</span></div>
 </div>
 
-<!-- INPUT AREA -->
+<!-- INPUT -->
 <div class="input-area">
   <div class="type-toggle">
-    <button class="type-btn active-in" id="btnMasuk" onclick="setType('masuk')">💚 Uang Masuk</button>
-    <button class="type-btn" id="btnKeluar" onclick="setType('keluar')">🔴 Uang Keluar</button>
+    <button class="type-btn active-in"  id="btnMasuk"  onclick="setType('masuk')">💚 Uang Masuk</button>
+    <button class="type-btn"            id="btnKeluar" onclick="setType('keluar')">🔴 Uang Keluar</button>
   </div>
-
-  <!-- MASUK -->
   <div id="formMasuk">
     <div class="form-row">
       <label>Jenis Masuk</label><span>:</span>
@@ -484,8 +478,6 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
       <input type="text" class="entry-field" id="keteranganMasuk" placeholder="Keterangan...">
     </div>
   </div>
-
-  <!-- KELUAR -->
   <div id="formKeluar" style="display:none">
     <div class="form-row">
       <label>Jenis Budget</label><span>:</span>
@@ -496,26 +488,19 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
       <input type="text" class="entry-field" id="keteranganKeluar" placeholder="Opsional...">
     </div>
   </div>
-
   <div class="bottom-row">
     <div class="nominal-wrap">
       <span>Rp</span>
       <input type="number" class="entry-field" id="nominalInput" placeholder="0" min="0">
     </div>
-    <button class="send-btn" onclick="sendEntry()">➤</button>
+    <button class="send-btn" id="sendBtn" onclick="sendEntry()">➤</button>
   </div>
 </div>
 
-<!-- FLOATING EDIT OVERLAY -->
+<!-- FLOATING EDIT -->
 <div class="floating-overlay" id="floatingOverlay" onclick="closeFloatingEdit()"></div>
-
-<!-- FLOATING EDIT FORM -->
 <div class="floating-edit" id="floatingEdit">
-  <h4>
-    ✏️ Edit Transaksi
-    <button onclick="closeFloatingEdit()">✕</button>
-  </h4>
-
+  <h4>✏️ Edit Transaksi <button onclick="closeFloatingEdit()">✕</button></h4>
   <div class="form-row">
     <label>Jenis</label><span>:</span>
     <select class="dropdown-field" id="feType" onchange="onFeTypeChange()">
@@ -523,7 +508,6 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
       <option value="keluar">🔴 Keluar</option>
     </select>
   </div>
-
   <div class="form-row" id="feJenisMasukRow">
     <label>Jenis Masuk</label><span>:</span>
     <select class="dropdown-field" id="feJenisMasuk">
@@ -531,29 +515,25 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
       <option value="Lainnya">Lainnya</option>
     </select>
   </div>
-
   <div class="form-row" id="feJenisKeluarRow" style="display:none">
     <label>Jenis Budget</label><span>:</span>
     <select class="dropdown-field" id="feJenisKeluar"></select>
   </div>
-
   <div class="form-row">
     <label>Keterangan</label><span>:</span>
     <input type="text" class="entry-field" id="feKeterangan" placeholder="Opsional...">
   </div>
-
   <div class="form-row">
     <label>Nominal</label><span>:</span>
-    <div class="nominal-wrap" style="flex:1">
+    <div class="nominal-wrap">
       <span>Rp</span>
       <input type="number" class="entry-field" id="feNominal" placeholder="0" min="0" style="padding-left:30px">
     </div>
   </div>
-
-  <div style="display:flex;gap:8px;margin-top:12px">
-    <button class="btn btn-danger" style="flex:0" onclick="deleteEntry()">🗑 Hapus</button>
-    <button class="btn btn-ghost" style="flex:1" onclick="closeFloatingEdit()">Batal</button>
-    <button class="btn btn-primary" style="flex:1" onclick="saveFloatingEdit()">Simpan</button>
+  <div class="fe-actions">
+    <button class="btn btn-danger" style="flex:0 0 auto" onclick="deleteEntry()">🗑 Hapus</button>
+    <button class="btn btn-ghost"   style="flex:1"         onclick="closeFloatingEdit()">Batal</button>
+    <button class="btn btn-primary" style="flex:1"         onclick="saveFloatingEdit()">Simpan</button>
   </div>
 </div>
 
@@ -565,17 +545,13 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
       <button class="modal-close" onclick="closeModal('settingModal')">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--wa-subtext);margin-bottom:12px">Atur tampilan aplikasi</p>
       <div class="theme-row">
-        <label>Mode Gelap (Dark Theme)</label>
+        <label style="margin:0;color:var(--wa-text);font-size:14px;font-weight:500">Mode Gelap</label>
         <label class="toggle">
           <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
           <span class="toggle-slider"></span>
         </label>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" onclick="closeModal('settingModal')">Tutup</button>
     </div>
   </div>
 </div>
@@ -589,7 +565,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
     </div>
     <div class="modal-body">
       <div id="budgetEditForm" style="display:none;margin-bottom:12px;padding:12px;background:var(--wa-input-bg);border-radius:8px">
-        <p style="font-size:12px;color:var(--wa-subtext);margin-bottom:8px;font-weight:600" id="editFormTitle">+ Tambah</p>
+        <p style="font-size:12px;color:var(--wa-teal);font-weight:700;margin-bottom:8px" id="editFormTitle">+</p>
         <label>Nama Jenis Budget</label>
         <input type="text" class="entry-field" id="editBudgetName" placeholder="Contoh: SPP Adik">
         <label>Jumlah Budget (Rp)</label>
@@ -600,16 +576,42 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
         </div>
       </div>
       <button class="btn btn-primary" onclick="showAddBudgetForm()" style="width:100%;margin-bottom:10px">+ Tambah Budget Baru</button>
-      <div class="budget-list" id="budgetList"></div>
+      <div id="budgetList"></div>
     </div>
   </div>
 </div>
 
-<script>
-// ========================
-// STATE
-// ========================
-const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+<!-- ═══════════════════════════════════════
+     ALL LOGIC IN ONE MODULE SCRIPT
+     Firebase is initialised here, so db is
+     guaranteed to exist before any call.
+════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp }         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore,
+  collection, doc,
+  addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy,
+  setDoc, getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ═══════════════════════════════════════
+// 🔧 ISI FIREBASE CONFIG KAMU DI SINI
+// ═══════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyCvOVM1NfLr7KRWeqmZl8gZVLA8F9UYvXc",
+    authDomain: "budgetwa-41335.firebaseapp.com",
+    projectId: "budgetwa-41335",
+    storageBucket: "budgetwa-41335.firebasestorage.app",
+    messagingSenderId: "785678795355",
+    appId: "1:785678795355:web:41689b58cff929a2b9f57e",
+    measurementId: "G-K7V25HL4B6"
+  };
+
+// ─── STATE ───
+const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni',
+                'Juli','Agustus','September','Oktober','November','Desember'];
 let budgets = [
   {name:'SPP Kakak',amount:250000},{name:'SPP Teteh',amount:200000},
   {name:'Rumah',amount:1700000},{name:'Listrik',amount:250000},
@@ -619,57 +621,78 @@ let budgets = [
   {name:'Transport',amount:300000},{name:'Anak-anak (Jajan Sekolah)',amount:300000},
   {name:'Ayah',amount:100000},{name:'Wifi',amount:247200},
 ];
-let entries = [];       // local mirror of Firestore
-let currentType = 'masuk';
-let editModeOn = false;
+let entries        = [];
+let currentType    = 'masuk';
+let editModeOn     = false;
 let editingEntryId = null;
-let editingBudgetIdx = null;
-let db, fbMod;
+let editingBudIdx  = null;
+let db             = null;   // set after successful init
+let unsub          = null;   // firestore listener
 
-// ========================
-// FIREBASE INIT
-// ========================
-function setSyncStatus(s) {
-  const dot = document.getElementById('syncDot');
-  dot.className = 'sync-dot ' + s; // ok | err | loading
+// ─── TOAST ───
+function toast(msg, type = 'info', duration = 3000) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 350);
+  }, duration);
 }
 
-window.addEventListener('firebase-ready', async () => {
-  db = window._db;
-  fbMod = window._fbModules;
+// ─── SYNC DOT ───
+function setSyncStatus(s) {
+  document.getElementById('syncDot').className = 'sync-dot ' + s;
+}
+
+// ─── FIREBASE INIT ───
+async function initFirebase() {
   setSyncStatus('loading');
+  document.getElementById('headerSub').textContent = 'Menghubungkan ke Firebase...';
+
+  // Detect placeholder config
+  if (firebaseConfig.apiKey === 'YOUR_API_KEY') {
+    toast('Firebase belum dikonfigurasi — mode offline aktif', 'info', 5000);
+    setSyncStatus('err');
+    document.getElementById('headerSub').textContent = 'Mode Offline (localStorage)';
+    loadFromLocalStorage();
+    return;
+  }
+
   try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+
     await loadBudgetsFromFirebase();
     subscribeEntries();
+
+    const now = new Date();
+    document.getElementById('headerSub').textContent =
+      MONTHS[now.getMonth()] + ' ' + now.getFullYear();
+
     setSyncStatus('ok');
-  } catch(e) {
-    console.error('Firebase error:', e);
+    toast('Terhubung ke Firebase ✓', 'success');
+  } catch (err) {
+    console.error('Firebase init error:', err);
     setSyncStatus('err');
-    // Fall back to localStorage
+    toast('Gagal terhubung ke Firebase: ' + err.message, 'error', 5000);
+    document.getElementById('headerSub').textContent = 'Mode Offline (localStorage)';
     loadFromLocalStorage();
   }
-});
+}
 
-// If firebase never fires (wrong config), fall back after 4s
-setTimeout(() => {
-  if (!db) {
-    setSyncStatus('err');
-    loadFromLocalStorage();
-  }
-}, 4000);
-
-// ========================
-// FIRESTORE: BUDGETS
-// ========================
+// ─── FIRESTORE: BUDGETS ───
 async function loadBudgetsFromFirebase() {
-  const {doc, getDoc, setDoc} = fbMod;
-  const ref = doc(db, 'config', 'budgets');
+  const ref  = doc(db, 'config', 'budgets');
   const snap = await getDoc(ref);
   if (snap.exists()) {
     budgets = snap.data().list;
   } else {
-    // First run: upload defaults
-    await setDoc(ref, {list: budgets});
+    await setDoc(ref, { list: budgets });
   }
   populateDropdowns();
   renderBudgetList();
@@ -678,86 +701,104 @@ async function loadBudgetsFromFirebase() {
 
 async function saveBudgetsToFirebase() {
   if (!db) { localStorage.setItem('budget_items', JSON.stringify(budgets)); return; }
-  const {doc, setDoc} = fbMod;
-  await setDoc(doc(db, 'config', 'budgets'), {list: budgets});
+  try {
+    await setDoc(doc(db, 'config', 'budgets'), { list: budgets });
+  } catch(e) {
+    toast('Gagal menyimpan budget: ' + e.message, 'error');
+  }
 }
 
-// ========================
-// FIRESTORE: ENTRIES
-// ========================
+// ─── FIRESTORE: ENTRIES ───
 function subscribeEntries() {
-  const {collection, query, orderBy, onSnapshot} = fbMod;
   const q = query(collection(db, 'entries'), orderBy('ts', 'asc'));
-  onSnapshot(q, snap => {
-    entries = snap.docs.map(d => ({id: d.id, ...d.data()}));
-    reRenderChat();
+  unsub = onSnapshot(q,
+    snap => {
+      entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      reRenderChat();
+      updateInfoBar();
+      setSyncStatus('ok');
+    },
+    err => {
+      console.error('Snapshot error:', err);
+      setSyncStatus('err');
+      toast('Koneksi terputus: ' + err.message, 'error');
+    }
+  );
+}
+
+async function fbAddEntry(entry) {
+  if (!db) {
+    const e = { ...entry, id: Date.now().toString() };
+    entries.push(e);
+    localStorage.setItem('budget_entries', JSON.stringify(entries));
+    appendBubble(e);
     updateInfoBar();
-    setSyncStatus('ok');
-  }, err => {
-    console.error(err);
+    return;
+  }
+  setSyncStatus('loading');
+  try {
+    await addDoc(collection(db, 'entries'), entry);
+  } catch(e) {
+    toast('Gagal menyimpan: ' + e.message, 'error');
     setSyncStatus('err');
-  });
-}
-
-async function addEntryToFirebase(entry) {
-  if (!db) { entries.push({...entry, id: Date.now().toString()}); save(); return; }
-  const {collection, addDoc} = fbMod;
-  setSyncStatus('loading');
-  await addDoc(collection(db, 'entries'), entry);
-}
-
-async function updateEntryInFirebase(id, data) {
-  if (!db) {
-    const i = entries.findIndex(e=>e.id===id);
-    if (i>=0) entries[i] = {...entries[i], ...data};
-    save(); reRenderChat(); updateInfoBar(); return;
   }
-  const {doc, updateDoc} = fbMod;
-  setSyncStatus('loading');
-  await updateDoc(doc(db, 'entries', id), data);
 }
 
-async function deleteEntryFromFirebase(id) {
+async function fbUpdateEntry(id, data) {
   if (!db) {
-    entries = entries.filter(e=>e.id!==id);
-    save(); reRenderChat(); updateInfoBar(); return;
+    const i = entries.findIndex(e => e.id === id);
+    if (i >= 0) entries[i] = { ...entries[i], ...data };
+    localStorage.setItem('budget_entries', JSON.stringify(entries));
+    reRenderChat(); updateInfoBar(); return;
   }
-  const {doc, deleteDoc} = fbMod;
   setSyncStatus('loading');
-  await deleteDoc(doc(db, 'entries', id));
+  try {
+    await updateDoc(doc(db, 'entries', id), data);
+    toast('Transaksi diperbarui', 'success');
+  } catch(e) {
+    toast('Gagal update: ' + e.message, 'error');
+    setSyncStatus('err');
+  }
 }
 
-// ========================
-// LOCAL STORAGE FALLBACK
-// ========================
+async function fbDeleteEntry(id) {
+  if (!db) {
+    entries = entries.filter(e => e.id !== id);
+    localStorage.setItem('budget_entries', JSON.stringify(entries));
+    reRenderChat(); updateInfoBar(); return;
+  }
+  setSyncStatus('loading');
+  try {
+    await deleteDoc(doc(db, 'entries', id));
+    toast('Transaksi dihapus', 'info');
+  } catch(e) {
+    toast('Gagal hapus: ' + e.message, 'error');
+    setSyncStatus('err');
+  }
+}
+
+// ─── LOCALSTORAGE FALLBACK ───
 function loadFromLocalStorage() {
-  const saved = localStorage.getItem('budget_entries');
+  const saved  = localStorage.getItem('budget_entries');
   const savedB = localStorage.getItem('budget_items');
   const savedT = localStorage.getItem('budget_theme');
-  if (saved) entries = JSON.parse(saved);
+  if (saved)  entries = JSON.parse(saved);
   if (savedB) budgets = JSON.parse(savedB);
   if (savedT === 'dark') {
     document.body.setAttribute('data-theme','dark');
     document.getElementById('themeToggle').checked = true;
   }
   populateDropdowns();
-  updateInfoBar();
   renderBudgetList();
+  updateInfoBar();
   reRenderChat();
 }
-function save() {
-  localStorage.setItem('budget_entries', JSON.stringify(entries));
-  localStorage.setItem('budget_items', JSON.stringify(budgets));
-}
 
-// ========================
-// INIT UI
-// ========================
+// ─── UI INIT ───
 function initUI() {
   const now = new Date();
-  const bulan = MONTHS[now.getMonth()] + ' ' + now.getFullYear();
-  document.getElementById('infoBulan').textContent = bulan;
-  document.getElementById('headerSub').textContent = bulan;
+  document.getElementById('infoBulan').textContent =
+    MONTHS[now.getMonth()] + ' ' + now.getFullYear();
   document.getElementById('todayLabel').textContent =
     'Hari ini, ' + now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
 
@@ -768,96 +809,78 @@ function initUI() {
   }
   populateDropdowns();
 }
-initUI();
 
-// ========================
-// DROPDOWNS
-// ========================
+// ─── DROPDOWNS ───
 function populateDropdowns() {
-  // Main input keluar
-  const sel = document.getElementById('jenisKeluar');
-  sel.innerHTML = budgets.map(b=>`<option value="${b.name}">${b.name}</option>`).join('');
-  // Floating edit keluar
-  const feSel = document.getElementById('feJenisKeluar');
-  feSel.innerHTML = budgets.map(b=>`<option value="${b.name}">${b.name}</option>`).join('');
-  // Info bar selector
+  const opts = budgets.map(b => `<option value="${b.name}">${b.name}</option>`).join('');
+  document.getElementById('jenisKeluar').innerHTML   = opts;
+  document.getElementById('feJenisKeluar').innerHTML = opts;
   const bSel = document.getElementById('budgetSelector');
-  bSel.innerHTML = budgets.map(b=>`<option value="${b.name}">${b.name}</option>`).join('');
+  bSel.innerHTML = opts;
   updateBudgetNominal();
 }
+window.updateBudgetNominal = function() {
+  const name   = document.getElementById('budgetSelector').value;
+  const budget = budgets.find(b => b.name === name);
+  if (!budget) return;
+  const used = entries
+    .filter(e => e.type === 'keluar' && e.jenis === name)
+    .reduce((s, e) => s + e.nominal, 0);
+  document.getElementById('infoBudgetNominal').textContent =
+    'Rp ' + fmt(Math.max(0, budget.amount - used));
+};
 
-// ========================
-// INFO BAR
-// ========================
+// ─── INFO BAR ───
 function updateInfoBar() {
-  const totalMasuk = entries.filter(e=>e.type==='masuk').reduce((s,e)=>s+e.nominal,0);
+  const totalMasuk  = entries.filter(e=>e.type==='masuk').reduce((s,e)=>s+e.nominal,0);
   const totalKeluar = entries.filter(e=>e.type==='keluar').reduce((s,e)=>s+e.nominal,0);
   document.getElementById('infoSisa').textContent = 'Rp ' + fmt(totalMasuk - totalKeluar);
   updateBudgetNominal();
 }
 
-function updateBudgetNominal() {
-  const sel = document.getElementById('budgetSelector');
-  if (!sel.value) return;
-  const bName = sel.value;
-  const budget = budgets.find(b=>b.name===bName);
-  if (!budget) return;
-  const used = entries.filter(e=>e.type==='keluar' && e.jenis===bName).reduce((s,e)=>s+e.nominal,0);
-  const sisa = Math.max(0, budget.amount - used);
-  document.getElementById('infoBudgetNominal').textContent = 'Rp ' + fmt(sisa);
-}
-
-// ========================
-// TYPE TOGGLE
-// ========================
-function setType(t) {
+// ─── TYPE TOGGLE ───
+window.setType = function(t) {
   currentType = t;
-  document.getElementById('formMasuk').style.display = t==='masuk'?'':'none';
-  document.getElementById('formKeluar').style.display = t==='keluar'?'':'none';
-  document.getElementById('btnMasuk').className = 'type-btn'+(t==='masuk'?' active-in':'');
-  document.getElementById('btnKeluar').className = 'type-btn'+(t==='keluar'?' active-out':'');
-}
+  document.getElementById('formMasuk').style.display  = t==='masuk'  ? '' : 'none';
+  document.getElementById('formKeluar').style.display = t==='keluar' ? '' : 'none';
+  document.getElementById('btnMasuk').className  = 'type-btn' + (t==='masuk'  ? ' active-in'  : '');
+  document.getElementById('btnKeluar').className = 'type-btn' + (t==='keluar' ? ' active-out' : '');
+};
 document.getElementById('jenisMasuk').addEventListener('change', function() {
-  document.getElementById('keteranganMasukRow').style.display = this.value==='Lainnya'?'':'none';
+  document.getElementById('keteranganMasukRow').style.display = this.value === 'Lainnya' ? '' : 'none';
 });
 
-// ========================
-// SEND ENTRY
-// ========================
-async function sendEntry() {
+// ─── SEND ───
+window.sendEntry = async function() {
   const nominal = parseFloat(document.getElementById('nominalInput').value);
   if (!nominal || nominal <= 0) { document.getElementById('nominalInput').focus(); return; }
 
   let jenis, keterangan;
   if (currentType === 'masuk') {
-    jenis = document.getElementById('jenisMasuk').value;
-    keterangan = jenis==='Lainnya' ? document.getElementById('keteranganMasuk').value : '';
+    jenis       = document.getElementById('jenisMasuk').value;
+    keterangan  = jenis === 'Lainnya' ? document.getElementById('keteranganMasuk').value : '';
   } else {
-    jenis = document.getElementById('jenisKeluar').value;
-    keterangan = document.getElementById('keteranganKeluar').value;
+    jenis       = document.getElementById('jenisKeluar').value;
+    keterangan  = document.getElementById('keteranganKeluar').value;
   }
 
-  const now = new Date();
+  const now   = new Date();
   const entry = {
     type: currentType, jenis, keterangan, nominal,
     time: now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),
-    ts: now.getTime()
+    ts:   now.getTime()
   };
 
-  document.getElementById('nominalInput').value = '';
+  document.getElementById('nominalInput').value   = '';
   document.getElementById('keteranganKeluar').value = '';
-  document.getElementById('keteranganMasuk').value = '';
+  document.getElementById('keteranganMasuk').value  = '';
 
-  await addEntryToFirebase(entry);
-  // If no Firebase, manually append
-  if (!db) { appendBubble(entry); updateInfoBar(); }
-}
+  await fbAddEntry(entry);
+};
 
-// ========================
-// CHAT BUBBLES
-// ========================
+// ─── CHAT ───
 function reRenderChat() {
-  const chat = document.getElementById('chatArea');
+  const chat    = document.getElementById('chatArea');
   const divider = chat.querySelector('.date-divider');
   chat.innerHTML = '';
   if (divider) chat.appendChild(divider);
@@ -866,20 +889,20 @@ function reRenderChat() {
 }
 
 function appendBubble(entry) {
-  const chat = document.getElementById('chatArea');
-  const isIn = entry.type === 'masuk';
+  const chat  = document.getElementById('chatArea');
+  const isIn  = entry.type === 'masuk';
 
-  const wrap = document.createElement('div');
-  wrap.className = 'bubble-wrap ' + (isIn ? 'left' : 'right');
-  wrap.dataset.id = entry.id || '';
+  const wrap  = document.createElement('div');
+  wrap.className   = 'bubble-wrap ' + (isIn ? 'left' : 'right');
+  wrap.dataset.id  = entry.id || '';
 
-  const pencil = document.createElement('button');
+  const pencil     = document.createElement('button');
   pencil.className = 'edit-pencil';
   pencil.textContent = '✏️';
-  pencil.title = 'Edit transaksi';
-  pencil.onclick = () => openFloatingEdit(entry);
+  pencil.title     = 'Edit transaksi';
+  pencil.onclick   = () => openFloatingEdit(entry);
 
-  const bubble = document.createElement('div');
+  const bubble     = document.createElement('div');
   bubble.className = 'bubble ' + (isIn ? 'in' : 'out');
 
   const badge = isIn
@@ -888,94 +911,77 @@ function appendBubble(entry) {
 
   bubble.innerHTML = `
     <div class="btag">${badge}</div>
-    <div><b>${entry.jenis}</b></div>
-    ${entry.keterangan ? `<div style="font-size:12px;color:var(--wa-subtext)">${entry.keterangan}</div>` : ''}
+    <div style="font-weight:600;margin-top:2px">${entry.jenis}</div>
+    ${entry.keterangan ? `<div class="bket">${entry.keterangan}</div>` : ''}
     <div class="bamt" style="color:${isIn?'#2E7D32':'#C62828'}">${isIn?'+':'-'} Rp ${fmt(entry.nominal)}</div>
     <span class="btime">${entry.time}</span>
   `;
 
-  if (isIn) {
-    wrap.appendChild(bubble);
-    wrap.appendChild(pencil);
-  } else {
-    wrap.appendChild(pencil);
-    wrap.appendChild(bubble);
-  }
+  // pencil: right side of left bubbles, left side of right bubbles
+  if (isIn) { wrap.appendChild(bubble); wrap.appendChild(pencil); }
+  else       { wrap.appendChild(pencil); wrap.appendChild(bubble); }
+
   chat.appendChild(wrap);
 }
 
-// ========================
-// EDIT MODE
-// ========================
-function toggleEditMode() {
+// ─── EDIT MODE ───
+window.toggleEditMode = function() {
   closeMenu();
   editModeOn = !editModeOn;
   document.body.classList.toggle('edit-mode-on', editModeOn);
   document.getElementById('editBanner').classList.toggle('active', editModeOn);
-  const menuItem = document.getElementById('editModeMenu');
-  menuItem.classList.toggle('active-menu', editModeOn);
-  menuItem.textContent = editModeOn ? '✅ Edit Mode (Aktif)' : '✏️ Edit Mode';
-}
+  const mi = document.getElementById('editModeMenu');
+  mi.classList.toggle('active-menu', editModeOn);
+  mi.textContent = editModeOn ? '✅ Edit Mode (Aktif)' : '✏️ Edit Mode';
+  if (editModeOn) toast('Edit Mode aktif — ketuk ✏️ pada chat', 'info');
+};
 
-// ========================
-// FLOATING EDIT FORM
-// ========================
+// ─── FLOATING EDIT ───
 function openFloatingEdit(entry) {
   if (!editModeOn) return;
   editingEntryId = entry.id;
-
   document.getElementById('feType').value = entry.type;
   onFeTypeChange();
-
-  if (entry.type === 'masuk') {
-    document.getElementById('feJenisMasuk').value = entry.jenis;
-  } else {
+  if (entry.type === 'masuk')
+    document.getElementById('feJenisMasuk').value  = entry.jenis;
+  else
     document.getElementById('feJenisKeluar').value = entry.jenis;
-  }
   document.getElementById('feKeterangan').value = entry.keterangan || '';
-  document.getElementById('feNominal').value = entry.nominal;
-
+  document.getElementById('feNominal').value    = entry.nominal;
   document.getElementById('floatingEdit').classList.add('open');
   document.getElementById('floatingOverlay').classList.add('open');
 }
-
-function closeFloatingEdit() {
+window.closeFloatingEdit = function() {
   document.getElementById('floatingEdit').classList.remove('open');
   document.getElementById('floatingOverlay').classList.remove('open');
   editingEntryId = null;
-}
-
-function onFeTypeChange() {
+};
+window.onFeTypeChange = function() {
   const t = document.getElementById('feType').value;
-  document.getElementById('feJenisMasukRow').style.display = t==='masuk'?'':'none';
-  document.getElementById('feJenisKeluarRow').style.display = t==='keluar'?'':'none';
-}
-
-async function saveFloatingEdit() {
+  document.getElementById('feJenisMasukRow').style.display  = t==='masuk'  ? '' : 'none';
+  document.getElementById('feJenisKeluarRow').style.display = t==='keluar' ? '' : 'none';
+};
+window.saveFloatingEdit = async function() {
   if (!editingEntryId) return;
-  const t = document.getElementById('feType').value;
-  const jenis = t==='masuk'
+  const t       = document.getElementById('feType').value;
+  const jenis   = t==='masuk'
     ? document.getElementById('feJenisMasuk').value
     : document.getElementById('feJenisKeluar').value;
   const keterangan = document.getElementById('feKeterangan').value;
-  const nominal = parseFloat(document.getElementById('feNominal').value);
+  const nominal    = parseFloat(document.getElementById('feNominal').value);
   if (!nominal || nominal <= 0) return;
-
-  await updateEntryInFirebase(editingEntryId, {type:t, jenis, keterangan, nominal});
+  await fbUpdateEntry(editingEntryId, { type: t, jenis, keterangan, nominal });
   closeFloatingEdit();
-}
-
-async function deleteEntry() {
+};
+window.deleteEntry = async function() {
   if (!editingEntryId) return;
   if (!confirm('Hapus transaksi ini?')) return;
-  await deleteEntryFromFirebase(editingEntryId);
+  await fbDeleteEntry(editingEntryId);
   closeFloatingEdit();
-}
+};
 
-// ========================
-// BUDGET CRUD
-// ========================
-function renderBudgetList() {
+// ─── BUDGET CRUD ───
+window.renderBudgetList = function() {
   document.getElementById('budgetList').innerHTML = budgets.map((b,i) => `
     <div class="budget-item">
       <div class="budget-item-name">${b.name}</div>
@@ -986,62 +992,55 @@ function renderBudgetList() {
       </div>
     </div>
   `).join('');
-}
-
-function showAddBudgetForm() {
-  editingBudgetIdx = null;
-  document.getElementById('editBudgetName').value = '';
+};
+window.showAddBudgetForm = function() {
+  editingBudIdx = null;
+  document.getElementById('editBudgetName').value   = '';
   document.getElementById('editBudgetAmount').value = '';
   document.getElementById('editFormTitle').textContent = '+ Tambah Budget Baru';
   document.getElementById('budgetEditForm').style.display = '';
-}
-function editBudgetItem(i) {
-  editingBudgetIdx = i;
-  document.getElementById('editBudgetName').value = budgets[i].name;
+};
+window.editBudgetItem = function(i) {
+  editingBudIdx = i;
+  document.getElementById('editBudgetName').value   = budgets[i].name;
   document.getElementById('editBudgetAmount').value = budgets[i].amount;
   document.getElementById('editFormTitle').textContent = '✏️ Edit: ' + budgets[i].name;
   document.getElementById('budgetEditForm').style.display = '';
-}
-function cancelBudgetEdit() {
+};
+window.cancelBudgetEdit = function() {
   document.getElementById('budgetEditForm').style.display = 'none';
-  editingBudgetIdx = null;
-}
-async function saveBudgetItem() {
-  const name = document.getElementById('editBudgetName').value.trim();
+  editingBudIdx = null;
+};
+window.saveBudgetItem = async function() {
+  const name   = document.getElementById('editBudgetName').value.trim();
   const amount = parseFloat(document.getElementById('editBudgetAmount').value);
   if (!name || !amount) return;
-  if (editingBudgetIdx !== null) {
-    budgets[editingBudgetIdx] = {name, amount};
-  } else {
-    budgets.push({name, amount});
-  }
+  if (editingBudIdx !== null) budgets[editingBudIdx] = {name, amount};
+  else budgets.push({name, amount});
   await saveBudgetsToFirebase();
-  populateDropdowns();
-  renderBudgetList();
-  updateInfoBar();
-  cancelBudgetEdit();
-}
-async function deleteBudgetItem(i) {
+  populateDropdowns(); renderBudgetList(); updateInfoBar(); cancelBudgetEdit();
+  toast('Budget disimpan', 'success');
+};
+window.deleteBudgetItem = async function(i) {
   if (!confirm('Hapus budget "' + budgets[i].name + '"?')) return;
-  budgets.splice(i,1);
+  budgets.splice(i, 1);
   await saveBudgetsToFirebase();
-  populateDropdowns();
-  renderBudgetList();
-  updateInfoBar();
-}
+  populateDropdowns(); renderBudgetList(); updateInfoBar();
+  toast('Budget dihapus', 'info');
+};
 
-// ========================
-// MODALS
-// ========================
-function openModal(id) {
+// ─── MODALS ───
+window.openModal = function(id) {
   closeMenu();
-  if (id==='budgetModal') {
+  if (id === 'budgetModal') {
     renderBudgetList();
     document.getElementById('budgetEditForm').style.display = 'none';
   }
   document.getElementById(id).classList.add('open');
-}
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+};
+window.closeModal = function(id) {
+  document.getElementById(id).classList.remove('open');
+};
 window.addEventListener('click', e => {
   ['settingModal','budgetModal'].forEach(id => {
     const m = document.getElementById(id);
@@ -1049,28 +1048,30 @@ window.addEventListener('click', e => {
   });
 });
 
-// ========================
-// MENU
-// ========================
-function toggleMenu() { document.getElementById('dropdownMenu').classList.toggle('open'); }
-function closeMenu()  { document.getElementById('dropdownMenu').classList.remove('open'); }
+// ─── MENU ───
+window.toggleMenu = function() {
+  document.getElementById('dropdownMenu').classList.toggle('open');
+};
+function closeMenu() {
+  document.getElementById('dropdownMenu').classList.remove('open');
+}
 document.addEventListener('click', e => {
   if (!e.target.closest('.header-icons')) closeMenu();
 });
 
-// ========================
-// THEME
-// ========================
-function toggleTheme() {
+// ─── THEME ───
+window.toggleTheme = function() {
   const dark = document.getElementById('themeToggle').checked;
-  document.body.setAttribute('data-theme', dark?'dark':'light');
-  localStorage.setItem('budget_theme', dark?'dark':'light');
-}
+  document.body.setAttribute('data-theme', dark ? 'dark' : 'light');
+  localStorage.setItem('budget_theme', dark ? 'dark' : 'light');
+};
 
-// ========================
-// UTILS
-// ========================
+// ─── UTILS ───
 function fmt(n) { return Math.round(n).toLocaleString('id-ID'); }
+
+// ─── BOOTSTRAP ───
+initUI();
+initFirebase();
 </script>
 </body>
 </html>
