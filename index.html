@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Budget Firebase App</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #0b141a;
+}
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, #075E54, #128C7E);
+  color: white;
+  padding: 12px;
+}
+
+.row {
+  display: flex;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.label {
+  width: 120px;
+}
+
+.value {
+  background: #fff176;
+  padding: 6px;
+  border-radius: 8px;
+  color: #000;
+}
+
+.dropdown {
+  background: #9ccc65;
+  border: none;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+/* CHAT */
+.chat {
+  height: calc(100vh - 260px);
+  overflow-y: auto;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.bubble {
+  max-width: 70%;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+}
+
+.left {
+  background: #202c33;
+  color: white;
+  align-self: flex-start;
+}
+
+.right {
+  background: #005c4b;
+  color: white;
+  align-self: flex-end;
+}
+
+.time {
+  font-size: 10px;
+  opacity: 0.7;
+  text-align: right;
+}
+
+/* FOOTER */
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: rgba(32,44,51,0.95);
+  padding: 10px;
+}
+
+.footer-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.input-yellow {
+  flex: 1;
+  background: #fff176;
+  border: none;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+button {
+  background: #25D366;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 15px;
+  border-radius: 10px;
+  background: #333;
+  color: white;
+  opacity: 0;
+  transition: 0.3s;
+  white-space: pre-line;
+  z-index: 999;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+.toast.success { background: #25D366; }
+.toast.error { background: #e53935; }
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+
+  <div class="row">
+    <div class="label">Bulan</div>
+    <select id="bulan" class="dropdown">
+      <option selected>Juni</option>
+      <option>Juli</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <div class="label">Saldo</div>
+    <div id="saldoUI" class="value">Rp 0</div>
+  </div>
+
+</div>
+
+<!-- CHAT -->
+<div id="chat" class="chat"></div>
+
+<!-- FOOTER -->
+<div class="footer">
+
+  <div class="footer-row">
+    <select id="jenis" class="dropdown" onchange="updateJenis()">
+      <option>Masuk</option>
+      <option>Keluar</option>
+    </select>
+
+    <select id="kategori" class="dropdown"></select>
+  </div>
+
+  <div class="footer-row">
+    <input id="nominal" class="input-yellow" placeholder="Nominal">
+  </div>
+
+  <div class="footer-row">
+    <input id="ket" class="input-yellow" placeholder="Keterangan">
+    <button onclick="kirim()">➤</button>
+  </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCvOVM1NfLr7KRWeqmZl8gZVLA8F9UYvXc",
+    authDomain: "budgetwa-41335.firebaseapp.com",
+    projectId: "budgetwa-41335",
+    storageBucket: "budgetwa-41335.firebasestorage.app",
+    messagingSenderId: "785678795355",
+    appId: "1:785678795355:web:41689b58cff929a2b9f57e",
+    measurementId: "G-K7V25HL4B6"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ==== STATE ==== */
+let saldo = 0;
+
+/* ==== DATA ==== */
+const income = ["Gaji","Lainnya"];
+const expense = ["Listrik","Transport","Makan","Wifi","BPJS"];
+
+/* ==== HELPER ==== */
+function formatRupiah(e){
+  let n=e.replace(/[^\d]/g,"");
+  return "Rp "+n.replace(/\B(?=(\d{3})+(?!\d))/g,".");
+}
+function getNumber(v){
+  return parseInt(v.replace(/[^\d]/g,""))||0;
+}
+
+nominal.oninput = ()=> nominal.value = formatRupiah(nominal.value);
+
+/* ==== TOAST ==== */
+function toast(msg,type="success"){
+  const t=document.getElementById("toast");
+  t.innerText=msg;
+  t.className="toast show "+type;
+  setTimeout(()=>t.className="toast",2500);
+}
+
+/* ==== DROPDOWN ==== */
+window.updateJenis = function(){
+  kategori.innerHTML="";
+  (jenis.value==="Masuk"?income:expense)
+  .forEach(v=>kategori.add(new Option(v,v)));
+};
+updateJenis();
+
+/* ==== CHAT ==== */
+function addBubble(text,side){
+  let d=document.createElement("div");
+  d.className="bubble "+side;
+  d.innerHTML=text+`<div class="time">${new Date().toLocaleString("id-ID")}</div>`;
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+/* ==== LOAD ==== */
+async function loadData(){
+  try{
+    const q=query(collection(db,"transaksi"),
+      where("bulan","==",bulan.value),
+      orderBy("createdAt"));
+
+    const snap=await getDocs(q);
+
+    chat.innerHTML="";
+    saldo=0;
+
+    snap.forEach(doc=>{
+      let d=doc.data();
+
+      if(d.jenis==="Keluar") saldo-=d.nominal;
+      else saldo+=d.nominal;
+
+      addBubble(
+        `${d.jenis==="Keluar"?"💸":"💰"} ${d.kategori}<br>
+         Rp ${d.nominal.toLocaleString()}<br>
+         <i>${d.keterangan}</i>`,
+        d.jenis==="Keluar"?"right":"left"
+      );
+    });
+
+    saldoUI.innerText=formatRupiah(saldo.toString());
+    toast("✅ Data berhasil dimuat");
+
+  }catch(e){
+    toast("❌ Gagal load data","error");
+  }
+}
+
+bulan.onchange=loadData;
+await loadData();
+
+/* ==== GET BUDGET ==== */
+async function getBudget(kat){
+  const q=query(collection(db,"budget"),
+    where("bulan","==",bulan.value),
+    where("nama","==",kat));
+
+  let s=await getDocs(q);
+  if(s.empty) return null;
+
+  let d=s.docs[0];
+  return {id:d.id,...d.data()};
+}
+
+/* ==== SEND ==== */
+window.kirim = async function(){
+
+  let j=jenis.value;
+  let kat=kategori.value;
+  let n=getNumber(nominal.value);
+  let ketVal=ket.value;
+
+  if(!n) return toast("Isi nominal!","error");
+
+  try{
+
+    let info="";
+
+    if(j==="Keluar"){
+      let b=await getBudget(kat);
+
+      if(!b) return toast("Budget tidak ada","error");
+      if(b.sisa<n) return toast("Budget kurang!","error");
+
+      let sisa=b.sisa-n;
+
+      await updateDoc(doc(db,"budget",b.id),{sisa});
+
+      saldo-=n;
+      info=`📊 Sisa ${kat}: ${formatRupiah(sisa.toString())}`;
+
+    }else{
+      saldo+=n;
+      info="💰 Saldo bertambah";
+    }
+
+    await addDoc(collection(db,"transaksi"),{
+      bulan:bulan.value,
+      jenis:j,
+      kategori:kat,
+      nominal:n,
+      keterangan:ketVal,
+      createdAt:new Date()
+    });
+
+    addBubble(
+      `${j==="Keluar"?"💸":"💰"} ${kat}<br>${nominal.value}<br><i>${ketVal}</i>`,
+      j==="Keluar"?"right":"left"
+    );
+
+    saldoUI.innerText=formatRupiah(saldo.toString());
+
+    toast(`✅ Transaksi berhasil\n💰 Saldo: ${formatRupiah(saldo.toString())}\n${info}`);
+
+  }catch(e){
+    console.error(e);
+    toast("❌ Error Firebase","error");
+  }
+
+  nominal.value="";
+  ket.value="";
+};
+
+</script>
+
+</body>
+</html>
