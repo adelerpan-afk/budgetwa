@@ -183,7 +183,8 @@ body{
 
 /* BUBBLE */
 .bubble-wrap{display:flex;align-items:flex-end;gap:6px;width:100%}
-.bubble-wrap.left{flex-direction:row}.bubble-wrap.right{flex-direction:row-reverse}
+.bubble-wrap.left{flex-direction:row;justify-content:flex-start}
+.bubble-wrap.right{flex-direction:row-reverse;justify-content:flex-start}
 .edit-pencil{
   display:none;background:none;border:none;font-size:15px;cursor:pointer;
   padding:4px;border-radius:50%;transition:background .2s;flex-shrink:0;align-self:center;
@@ -191,7 +192,7 @@ body{
 .edit-pencil:hover,.edit-pencil:active{background:rgba(0,0,0,0.1)}
 .edit-mode-on .edit-pencil{display:flex}
 .bubble{
-  flex:1;min-width:0;border-radius:8px;padding:8px 12px 6px;font-size:13.5px;
+  flex:0 1 auto;min-width:140px;max-width:78%;border-radius:8px;padding:8px 12px 6px;font-size:13.5px;
   position:relative;box-shadow:0 1px 2px rgba(0,0,0,0.12);line-height:1.5;
 }
 .bubble.out{background:var(--wa-bubble-out);border-top-right-radius:2px}
@@ -347,25 +348,51 @@ input:checked + .toggle-slider::before{transform:translateX(20px)}
 .sc-in{color:#2E7D32}.sc-out{color:#C62828}.sc-sisa{color:#0277BD}
 .pie-container{position:relative;width:180px;margin:0 auto 16px;aspect-ratio:1}
 canvas.pie-canvas{width:100%!important;height:100%!important}
-.legend-list{list-style:none;display:flex;flex-direction:column;gap:6px}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.legend-list{list-style:none;display:flex;flex-direction:column;gap:2px}
+.legend-item{
+  display:flex;align-items:center;gap:8px;font-size:12.5px;
+  cursor:pointer;padding:6px 4px;border-radius:8px;transition:background .15s;
+}
+.legend-item:hover,.legend-item:active{background:var(--wa-input-bg)}
 .legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .legend-name{flex:1;color:var(--wa-text)}
 .legend-amt{font-weight:700;color:var(--wa-text);font-size:12px}
-.legend-pct{color:var(--wa-subtext);font-size:11px}
+.legend-pct{color:var(--wa-subtext);font-size:11px;min-width:38px;text-align:right}
+.legend-chevron{font-size:11px;color:var(--wa-subtext);transition:transform .2s;flex-shrink:0;width:14px;text-align:center}
+.legend-chevron.open{transform:rotate(90deg)}
+.legend-detail{
+  display:none;flex-direction:column;gap:4px;
+  padding:4px 4px 8px 30px;margin-bottom:2px;
+  border-left:2px solid var(--wa-divider);margin-left:6px;
+}
+.legend-detail.open{display:flex}
+.legend-detail-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11.5px;padding:4px 8px;background:var(--wa-input-bg);border-radius:6px;
+}
+.legend-detail-row .ldr-left{color:var(--wa-subtext);flex:1;min-width:0}
+.legend-detail-row .ldr-ket{color:var(--wa-text);font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend-detail-row .ldr-time{font-size:10px;color:var(--wa-subtext)}
+.legend-detail-row .ldr-amt{font-weight:700;color:var(--wa-text);white-space:nowrap;margin-left:8px}
 .empty-state{text-align:center;padding:30px 20px;color:var(--wa-subtext);font-size:13px}
 .empty-state .empty-icon{font-size:36px;margin-bottom:8px}
 .hutang-report-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.hr-card{border-radius:10px;padding:12px;text-align:center}
+.hr-card{border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:opacity .15s}
+.hr-card:active{opacity:0.8}
 .hr-card-skyz{background:linear-gradient(135deg,#E1BEE7,#CE93D8)}
 .hr-card-tv{background:linear-gradient(135deg,#BBDEFB,#90CAF9)}
-.hr-card .hrc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.hr-card .hrc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:4px}
 .hr-card-skyz .hrc-title{color:#4A148C}
 .hr-card-tv .hrc-title{color:#01579B}
 .hr-card .hrc-val{font-size:15px;font-weight:700}
 .hr-card-skyz .hrc-val{color:#4A148C}
 .hr-card-tv .hrc-val{color:#01579B}
 .hr-card .hrc-sub{font-size:10px;color:rgba(0,0,0,0.5);margin-top:2px}
+.hutang-detail{
+  display:none;flex-direction:column;gap:4px;margin-top:8px;
+  padding:8px;background:var(--wa-input-bg);border-radius:8px;
+}
+.hutang-detail.open{display:flex}
 
 /* PWA install banner */
 #installBanner{
@@ -452,9 +479,7 @@ canvas.pie-canvas{width:100%!important;height:100%!important}
   </div>
 
   <!-- CHAT -->
-  <div class="chat-area" id="chatArea">
-    <div class="date-divider"><span id="todayLabel">—</span></div>
-  </div>
+  <div class="chat-area" id="chatArea"></div>
 
   <!-- INPUT CHAT -->
   <div class="input-area">
@@ -516,9 +541,7 @@ canvas.pie-canvas{width:100%!important;height:100%!important}
   </div>
 
   <!-- HUTANG CHAT -->
-  <div class="chat-area" id="hutangArea">
-    <div class="date-divider"><span id="hutangTodayLabel">—</span></div>
-  </div>
+  <div class="chat-area" id="hutangArea"></div>
 
   <!-- INPUT HUTANG -->
   <div class="input-area">
@@ -867,8 +890,6 @@ function initUI() {
   const now = new Date();
   reportMonth = now.getMonth(); reportYear = now.getFullYear();
   document.getElementById('infoBulan').textContent = MONTHS[now.getMonth()] + ' ' + now.getFullYear();
-  document.getElementById('todayLabel').textContent = 'Hari ini, ' + now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('hutangTodayLabel').textContent = 'Hari ini, ' + now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
   const st = localStorage.getItem('budget_theme');
   if (st==='dark') { document.body.setAttribute('data-theme','dark'); document.getElementById('themeToggle').checked=true; }
   populateDropdowns();
@@ -984,21 +1005,62 @@ window.sendHutangEntry = async function() {
   await fbAddHutang(entry);
 };
 
+// ─── DATE LABEL HELPER ───
+function dateLabel(ts) {
+  const d = new Date(ts);
+  const today = new Date();
+  const yesterday = new Date(); yesterday.setDate(today.getDate()-1);
+  const sameDay = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  if (sameDay(d, today)) return 'Hari ini';
+  if (sameDay(d, yesterday)) return 'Kemarin';
+  return d.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+}
+function dateKey(ts) {
+  const d = new Date(ts);
+  return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
+}
+
 // ─── RENDER CHAT ───
 function reRenderChat() {
   const chat = document.getElementById('chatArea');
-  const divider = chat.querySelector('.date-divider');
   chat.innerHTML = '';
-  if (divider) chat.appendChild(divider);
-  entries.forEach(e => appendBubble(e));
+  let lastKey = null;
+  entries.forEach(e => {
+    const k = dateKey(e.ts || Date.now());
+    if (k !== lastKey) {
+      const divider = document.createElement('div');
+      divider.className = 'date-divider';
+      divider.innerHTML = `<span>${dateLabel(e.ts || Date.now())}</span>`;
+      chat.appendChild(divider);
+      lastKey = k;
+    }
+    appendBubble(e, false);
+  });
+  if (entries.length === 0) {
+    const divider = document.createElement('div');
+    divider.className = 'date-divider';
+    divider.innerHTML = `<span>Hari ini, ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</span>`;
+    chat.appendChild(divider);
+  }
   chat.scrollTop = chat.scrollHeight;
 }
-function appendBubble(entry) {
+function appendBubble(entry, withDivider = true) {
   const chat  = document.getElementById('chatArea');
+  if (withDivider) {
+    const existingKeys = Array.from(chat.querySelectorAll('.bubble-wrap')).map(w => w.dataset.dateKey);
+    const k = dateKey(entry.ts || Date.now());
+    if (!existingKeys.includes(k)) {
+      const divider = document.createElement('div');
+      divider.className = 'date-divider';
+      divider.innerHTML = `<span>${dateLabel(entry.ts || Date.now())}</span>`;
+      chat.appendChild(divider);
+    }
+  }
   const isIn  = entry.type==='masuk';
   const wrap  = document.createElement('div');
   wrap.className  = 'bubble-wrap ' + (isIn ? 'left' : 'right');
   wrap.dataset.id = entry.id || '';
+  wrap.dataset.dateKey = dateKey(entry.ts || Date.now());
   const pencil = document.createElement('button');
   pencil.className   = 'edit-pencil';
   pencil.textContent = '✏️';
@@ -1010,8 +1072,8 @@ function appendBubble(entry) {
   bubble.innerHTML = `
     <div class="btag">${badge}</div>
     <div style="font-weight:600;margin-top:2px">${entry.jenis}</div>
-    ${entry.keterangan ? `<div class="bket">${entry.keterangan}</div>` : ''}
     <div class="bamt" style="color:${isIn?'#2E7D32':'#C62828'}">${isIn?'+':'-'} Rp ${fmt(entry.nominal)}</div>
+    ${entry.keterangan ? `<div class="bket">${entry.keterangan}</div>` : ''}
     <span class="btime">${entry.time}</span>
   `;
   if (isIn) { wrap.appendChild(bubble); wrap.appendChild(pencil); }
@@ -1022,18 +1084,44 @@ function appendBubble(entry) {
 // ─── RENDER HUTANG ───
 function reRenderHutang() {
   const area = document.getElementById('hutangArea');
-  const divider = area.querySelector('.date-divider');
   area.innerHTML = '';
-  if (divider) area.appendChild(divider);
-  hutangEntries.forEach(e => appendHutangBubble(e));
+  let lastKey = null;
+  hutangEntries.forEach(e => {
+    const k = dateKey(e.ts || Date.now());
+    if (k !== lastKey) {
+      const divider = document.createElement('div');
+      divider.className = 'date-divider';
+      divider.innerHTML = `<span>${dateLabel(e.ts || Date.now())}</span>`;
+      area.appendChild(divider);
+      lastKey = k;
+    }
+    appendHutangBubble(e, false);
+  });
+  if (hutangEntries.length === 0) {
+    const divider = document.createElement('div');
+    divider.className = 'date-divider';
+    divider.innerHTML = `<span>Hari ini, ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</span>`;
+    area.appendChild(divider);
+  }
   area.scrollTop = area.scrollHeight;
 }
-function appendHutangBubble(entry) {
+function appendHutangBubble(entry, withDivider = true) {
   const area = document.getElementById('hutangArea');
+  if (withDivider) {
+    const existingKeys = Array.from(area.querySelectorAll('.bubble-wrap')).map(w => w.dataset.dateKey);
+    const k = dateKey(entry.ts || Date.now());
+    if (!existingKeys.includes(k)) {
+      const divider = document.createElement('div');
+      divider.className = 'date-divider';
+      divider.innerHTML = `<span>${dateLabel(entry.ts || Date.now())}</span>`;
+      area.appendChild(divider);
+    }
+  }
   const isHutang = entry.type === 'hutang';
   const wrap  = document.createElement('div');
   wrap.className  = 'bubble-wrap ' + (isHutang ? 'right' : 'left');
   wrap.dataset.id = entry.id || '';
+  wrap.dataset.dateKey = dateKey(entry.ts || Date.now());
   const pencil = document.createElement('button');
   pencil.className   = 'edit-pencil';
   pencil.textContent = '✏️';
@@ -1047,8 +1135,8 @@ function appendHutangBubble(entry) {
   const color = isHutang ? '#6A1B9A' : '#0277BD';
   bubble.innerHTML = `
     <div class="btag">${badge} <span class="bsub">${entry.kartu}</span></div>
-    ${entry.keterangan ? `<div class="bket">${entry.keterangan}</div>` : ''}
     <div class="bamt" style="color:${color}">${isHutang?'+':'-'} Rp ${fmt(entry.nominal)}</div>
+    ${entry.keterangan ? `<div class="bket">${entry.keterangan}</div>` : ''}
     <span class="btime">${entry.time}</span>
   `;
   if (isHutang) { wrap.appendChild(pencil); wrap.appendChild(bubble); }
@@ -1227,6 +1315,20 @@ window.changeReportMonth = function(dir) {
   reportMonth += dir;
   if (reportMonth > 11) { reportMonth = 0; reportYear++; }
   if (reportMonth < 0)  { reportMonth = 11; reportYear--; }
+  expandedLegend = null;
+  expandedHutangCard = null;
+  renderReport();
+};
+
+let expandedLegend = null;
+let expandedHutangCard = null;
+
+window.toggleLegendDetail = function(idx) {
+  expandedLegend = (expandedLegend === idx) ? null : idx;
+  renderReport();
+};
+window.toggleHutangCard = function(kartu) {
+  expandedHutangCard = (expandedHutangCard === kartu) ? null : kartu;
   renderReport();
 };
 
@@ -1244,20 +1346,22 @@ function renderReport() {
   const totalKeluar = mEntries.filter(e=>e.type==='keluar').reduce((s,e)=>s+e.nominal,0);
   const saldo = totalMasuk - totalKeluar;
 
-  // Group keluar by jenis
+  // Group keluar by jenis, keep raw entries for detail
   const keluarMap = {};
   mEntries.filter(e=>e.type==='keluar').forEach(e=>{
-    keluarMap[e.jenis] = (keluarMap[e.jenis]||0) + e.nominal;
+    if (!keluarMap[e.jenis]) keluarMap[e.jenis] = { total: 0, items: [] };
+    keluarMap[e.jenis].total += e.nominal;
+    keluarMap[e.jenis].items.push(e);
   });
-  const keluarArr = Object.entries(keluarMap).sort((a,b)=>b[1]-a[1]);
+  const keluarArr = Object.entries(keluarMap).sort((a,b)=>b[1].total-a[1].total);
 
   // Hutang stats for the month
   const hutangBaru  = mHutang.filter(e=>e.type==='hutang').reduce((s,e)=>s+e.nominal,0);
   const bayarHutang = mHutang.filter(e=>e.type==='bayar').reduce((s,e)=>s+e.nominal,0);
+  const skyzItems = mHutang.filter(e=>e.kartu==='SKYZ').sort((a,b)=>b.ts-a.ts);
+  const tvItems   = mHutang.filter(e=>e.kartu==='Traveloka').sort((a,b)=>b.ts-a.ts);
 
   const isDark = document.body.getAttribute('data-theme')==='dark';
-  const textColor = isDark ? '#E9EDEF' : '#111B21';
-  const subColor  = isDark ? '#8696A0' : '#667781';
 
   area.innerHTML = `
     <div class="report-header">
@@ -1305,17 +1409,31 @@ function renderReport() {
     <div class="report-section">
       <div class="report-section-title">💳 Hutang Bulan Ini</div>
       <div class="hutang-report-cards">
-        <div class="hr-card hr-card-skyz">
-          <div class="hrc-title">SKYZ</div>
+        <div class="hr-card hr-card-skyz" onclick="toggleHutangCard('SKYZ')">
+          <div class="hrc-title">SKYZ ${skyzItems.length ? (expandedHutangCard==='SKYZ'?'▾':'▸') : ''}</div>
           <div class="hrc-val">Rp ${fmtK(mHutang.filter(e=>e.type==='hutang'&&e.kartu==='SKYZ').reduce((s,e)=>s+e.nominal,0))}</div>
           <div class="hrc-sub">Hutang baru</div>
         </div>
-        <div class="hr-card hr-card-tv">
-          <div class="hrc-title">TRAVELOKA</div>
+        <div class="hr-card hr-card-tv" onclick="toggleHutangCard('Traveloka')">
+          <div class="hrc-title">TRAVELOKA ${tvItems.length ? (expandedHutangCard==='Traveloka'?'▾':'▸') : ''}</div>
           <div class="hrc-val">Rp ${fmtK(mHutang.filter(e=>e.type==='hutang'&&e.kartu==='Traveloka').reduce((s,e)=>s+e.nominal,0))}</div>
           <div class="hrc-sub">Hutang baru</div>
         </div>
       </div>
+      ${expandedHutangCard ? `
+      <div class="hutang-detail open">
+        ${(expandedHutangCard==='SKYZ'?skyzItems:tvItems).length === 0
+          ? `<div style="font-size:11.5px;color:var(--wa-subtext);text-align:center;padding:6px">Belum ada transaksi</div>`
+          : (expandedHutangCard==='SKYZ'?skyzItems:tvItems).map(e => `
+            <div class="legend-detail-row">
+              <div class="ldr-left">
+                <span class="ldr-ket">${e.type==='hutang'?'💳 Hutang baru':'✅ Bayar'}${e.keterangan ? ' · ' + e.keterangan : ''}</span>
+                <span class="ldr-time">${e.time}</span>
+              </div>
+              <span class="ldr-amt" style="color:${e.type==='hutang'?'#6A1B9A':'#0277BD'}">${e.type==='hutang'?'+':'-'} Rp ${fmt(e.nominal)}</span>
+            </div>
+          `).join('')}
+      </div>` : ''}
       ${bayarHutang>0?`<div style="margin-top:8px;text-align:center;font-size:13px;color:#0277BD;font-weight:600">✅ Total Pembayaran: Rp ${fmt(bayarHutang)}</div>`:''}
       ${hutangBaru===0&&bayarHutang===0?`<div class="empty-state" style="padding:16px 0 0"><div class="empty-icon">🎉</div>Tidak ada hutang di bulan ini</div>`:''}
     </div>
@@ -1326,7 +1444,7 @@ function renderReport() {
     const ctx = document.getElementById('pieChart').getContext('2d');
     if (pieChart) { pieChart.destroy(); pieChart = null; }
     const labels = keluarArr.map(([k])=>k);
-    const data   = keluarArr.map(([,v])=>v);
+    const data   = keluarArr.map(([,v])=>v.total);
     const colors = keluarArr.map((_,i)=>PIE_COLORS[i % PIE_COLORS.length]);
 
     pieChart = new Chart(ctx, {
@@ -1347,18 +1465,34 @@ function renderReport() {
       }
     });
 
-    // Build legend
+    // Build legend with expand/collapse
     const legend = document.getElementById('pieLegend');
-    keluarArr.forEach(([name, val], i) => {
-      const pct = ((val/totalKeluar)*100).toFixed(1);
+    keluarArr.forEach(([name, info], i) => {
+      const pct = ((info.total/totalKeluar)*100).toFixed(1);
+      const isOpen = expandedLegend === i;
+
       const li = document.createElement('li');
-      li.className = 'legend-item';
       li.innerHTML = `
-        <span class="legend-dot" style="background:${colors[i]}"></span>
-        <span class="legend-name">${name}</span>
-        <span class="legend-amt">Rp ${fmtK(val)}</span>
-        <span class="legend-pct">${pct}%</span>
+        <div class="legend-item" data-idx="${i}">
+          <span class="legend-chevron${isOpen?' open':''}">▸</span>
+          <span class="legend-dot" style="background:${colors[i]}"></span>
+          <span class="legend-name">${name}</span>
+          <span class="legend-amt">Rp ${fmtK(info.total)}</span>
+          <span class="legend-pct">${pct}%</span>
+        </div>
+        <div class="legend-detail${isOpen?' open':''}">
+          ${info.items.sort((a,b)=>b.ts-a.ts).map(e => `
+            <div class="legend-detail-row">
+              <div class="ldr-left">
+                ${e.keterangan ? `<span class="ldr-ket">${e.keterangan}</span>` : `<span class="ldr-ket" style="opacity:.6">Tanpa keterangan</span>`}
+                <span class="ldr-time">${e.time}</span>
+              </div>
+              <span class="ldr-amt" style="color:#C62828">- Rp ${fmt(e.nominal)}</span>
+            </div>
+          `).join('')}
+        </div>
       `;
+      li.querySelector('.legend-item').addEventListener('click', () => toggleLegendDetail(i));
       legend.appendChild(li);
     });
   }
